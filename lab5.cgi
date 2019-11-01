@@ -7,8 +7,8 @@ import json
 import MySQLdb
 import passwords
 
-import cgitb
-cgitb.enable()
+#import cgitb
+#cgitb.enable()
 
 form = cgi.FieldStorage()
 
@@ -75,14 +75,17 @@ def getdb():
     for rec in records:
         dic = {}
         index = 0
+        id = 0
         for fie in fields:
             if fie == 'id':
-                val = rec[index]
+                id = rec[index]
+                val = id
             else:
                 val = str(rec[index])
             tmp = {fie:val}
             dic.update(tmp)
             index += 1
+        dic.update({'url':f'http://ec2-54-89-190-70.compute-1.amazonaws.com/cgi-bin/lab5.cgi/play_list/{id}'})
         db.append(dic)
     return db
     
@@ -105,12 +108,15 @@ def singleObj(ID):
     conn.close()
     
     dic = {}
+    id = 0
     for i in range(len(fields)):
         if fields[i] == 'id':
             val = obj[i]
+            id = val
         else:
             val = str(obj[i])
         dic.update({fields[i]:val})
+    dic.update({'url':f'http://ec2-54-89-190-70.compute-1.amazonaws.com/cgi-bin/lab5.cgi/play_list/{id}'})
     obj_json = json.dumps([dic], indent=2)
     print(obj_json)  
 
@@ -131,21 +137,22 @@ def post():
 def insert(name, artist, date):
     conn = setConn()
     cursor = conn.cursor()
+    
     cursor.execute(f'''
-         INSERT INTO play_list (song_name. artist, release_date)
+         INSERT INTO play_list (song_name, artist, release_date)
          VALUES ('{name}', '{artist}', '{date}');
          ''')
-        
-    new_id = cursor.lastowid
+    
+    new_id = cursor.lastrowid
     cursor.close()
     conn.commit()
     conn.close()
     
+     
     print("Status: 302 Redirect")
     print(f"Location: play_list/{new_id}")
     print()
     
-
 def trampoline():
     print("Status: 302 Redirect")
     print("Location: landing_pad")
@@ -201,7 +208,7 @@ else:
     ids = getID()
     if pathinfo in ['/play_list/'+str(i) for i in ids]:
         singleObj(pathinfo.split('/')[-1])
-    elif pathinfo[:-1] in ['/play_list/'+str(i) for i in ids]:
+    elif pathinfo[-1]=='/' and pathinfo[:-1] in ['/play_list/'+str(i) for i in ids]:
         singleObj(pathinfo.split('/')[-2])
     
     elif form.getvalue('song_name') and form.getvalue('artist') and form.getvalue('date'):
@@ -214,9 +221,9 @@ else:
         print('<br><b>ERROR:</b> Unrecognized path: '+pathinfo)
         
         print ('''
-    <br>
-    <p><a href="http://ec2-54-89-190-70.compute-1.amazonaws.com/cgi-bin/lab5.cgi/play_list/">play list</a>/ (GET)
-    <br><a href="http://ec2-54-89-190-70.compute-1.amazonaws.com/cgi-bin/lab5.cgi/new_song">new play list form</a> (form, will POST to play_list)
+            <br>
+            <p><a href="http://ec2-54-89-190-70.compute-1.amazonaws.com/cgi-bin/lab5.cgi/play_list/">play list</a>/ (GET)
+            <br><a href="http://ec2-54-89-190-70.compute-1.amazonaws.com/cgi-bin/lab5.cgi/new_song">new play list form</a> (form, will POST to play_list)
 
-    <p><a href="http://ec2-54-89-190-70.compute-1.amazonaws.com/cgi-bin/lab5.cgi/">back to the root of this REST site</a>
-    ''')
+            <p><a href="http://ec2-54-89-190-70.compute-1.amazonaws.com/cgi-bin/lab5.cgi/">back to the root of this REST site</a>
+            ''')
